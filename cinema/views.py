@@ -1,19 +1,16 @@
 from rest_framework import viewsets
 from cinema.models import CinemaHall, Genre, Actor, Movie, MovieSession
 from cinema.serializers import (
-    CinemaHallSerializer,
     GenreSerializer,
     ActorSerializer,
+    CinemaHallSerializer,
+    MovieSerializer,
+    MovieSessionSerializer,
     MovieListSerializer,
-    MovieDetailSerializer,
+    MovieRetriveSerializer,
     MovieSessionListSerializer,
-    MovieSessionDetailSerializer,
+    MovieSessionRetrieveSerializer,
 )
-
-
-class CinemaHallViewSet(viewsets.ModelViewSet):
-    queryset = CinemaHall.objects.all()
-    serializer_class = CinemaHallSerializer
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -26,13 +23,25 @@ class ActorViewSet(viewsets.ModelViewSet):
     serializer_class = ActorSerializer
 
 
+class CinemaHallViewSet(viewsets.ModelViewSet):
+    queryset = CinemaHall.objects.all()
+    serializer_class = CinemaHallSerializer
+
+
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
 
     def get_serializer_class(self):
         if self.action == "list":
             return MovieListSerializer
-        return MovieDetailSerializer
+        elif self.action == "retrieve":
+            return MovieRetriveSerializer
+        return MovieSerializer
+
+    def get_queryset(self):
+        if self.action in ["list", "retrieve"]:
+            return Movie.objects.prefetch_related("actors", "genres")
+        return super().get_queryset()
 
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
@@ -41,4 +50,11 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return MovieSessionListSerializer
-        return MovieSessionDetailSerializer
+        elif self.action == "retrieve":
+            return MovieSessionRetrieveSerializer
+        return MovieSessionSerializer
+
+    def get_queryset(self):
+        if self.action in ["list", "retrieve"]:
+            return MovieSession.objects.select_related("movie", "cinema_hall")
+        return super().get_queryset()
